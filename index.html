@@ -1,52 +1,130 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Shared Task Board</title>
+  <title>Panda Ops Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    body { font-family: Arial, sans-serif; background:#f4f4f4; padding:15px; }
-    h1 { text-align:center; }
-    .app { max-width:1000px; margin:auto; }
-    .input-box, .column { background:white; padding:15px; border-radius:10px; }
-    .input-box { margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap; }
-    input, select, button { padding:10px; border-radius:6px; border:1px solid #ccc; }
-    button { cursor:pointer; background:#222; color:white; }
-    .columns { display:flex; gap:15px; }
-    .column { flex:1; min-height:250px; }
-    .task {
-      padding:12px;
-      margin:10px 0;
-      border-radius:8px;
-      color:white;
+    body {
+      font-family: Arial, sans-serif;
+      background:#f3f4f6;
+      margin:0;
+      padding:10px;
     }
+
+    .app {
+      max-width:1100px;
+      margin:auto;
+    }
+
+    h1 {
+      text-align:center;
+      font-size:24px;
+      margin:10px 0 14px;
+    }
+
+    .input-box {
+      background:white;
+      padding:10px;
+      border-radius:12px;
+      display:flex;
+      gap:6px;
+      margin-bottom:10px;
+      box-shadow:0 1px 4px rgba(0,0,0,.08);
+    }
+
+    input, select, button {
+      padding:8px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      font-size:14px;
+    }
+
+    input { flex:1; }
+
+    button {
+      background:#111827;
+      color:white;
+      border:none;
+      cursor:pointer;
+    }
+
+    .columns {
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:8px;
+    }
+
+    .column {
+      background:white;
+      border-radius:14px;
+      padding:8px;
+      min-height:420px;
+      max-height:70vh;
+      overflow-y:auto;
+      box-shadow:0 1px 5px rgba(0,0,0,.08);
+    }
+
+    .column h2 {
+      font-size:16px;
+      margin:0 0 8px;
+      padding:8px;
+      border-radius:10px;
+      color:white;
+      text-align:center;
+    }
+
+    .waiting-title { background:#dc2626; }
+    .low-title { background:#f59e0b; }
+    .available-title { background:#16a34a; }
+
+    .task {
+      padding:8px;
+      margin:6px 0;
+      border-radius:10px;
+      color:white;
+      font-size:14px;
+      font-weight:bold;
+    }
+
     .task-top {
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:8px;
-    }
-    .task-buttons {
-      margin-top:10px;
-      display:flex;
       gap:6px;
-      flex-wrap:wrap;
     }
-    .task-buttons button, .delete {
+
+    .task-buttons {
+      display:flex;
+      gap:4px;
+      margin-top:6px;
+    }
+
+    .task-buttons button,
+    .delete {
+      font-size:11px;
+      padding:5px;
+      border-radius:6px;
       background:rgba(0,0,0,.25);
-      border:none;
       color:white;
-      font-size:12px;
-      padding:6px 8px;
+      border:none;
+      flex:1;
     }
+
     .waiting { background:#ef4444; }
     .low { background:#f59e0b; }
     .available { background:#22c55e; }
 
     @media (max-width:700px) {
-      .columns { flex-direction:column; }
-      .input-box { flex-direction:column; }
-      input, select, button { width:100%; }
+      body { padding:6px; }
+      h1 { font-size:20px; }
+      .columns { grid-template-columns: repeat(3, 1fr); gap:5px; }
+      .column { padding:5px; min-height:500px; }
+      .column h2 { font-size:13px; padding:6px; }
+      .task { font-size:12px; padding:6px; }
+      .task-buttons button,
+      .delete { font-size:10px; padding:4px; }
+      input, select, button { font-size:12px; padding:7px; }
     }
   </style>
 </head>
@@ -54,33 +132,31 @@
 <body>
 
 <div class="app">
-  <h1>Shared Task Board</h1>
+  <h1>Panda Ops Board</h1>
 
   <div class="input-box">
-    <input type="text" id="taskInput" placeholder="Enter a task">
-
+    <input type="text" id="taskInput" placeholder="Item name">
     <select id="category">
       <option value="waiting">Waiting</option>
       <option value="low">Low</option>
       <option value="available">Available</option>
     </select>
-
-    <button id="addBtn">Add Task</button>
+    <button id="addBtn">Add</button>
   </div>
 
   <div class="columns">
     <div class="column">
-      <h2>Waiting</h2>
+      <h2 class="waiting-title">Waiting</h2>
       <div id="waitingList"></div>
     </div>
 
     <div class="column">
-      <h2>Low</h2>
+      <h2 class="low-title">Low</h2>
       <div id="lowList"></div>
     </div>
 
     <div class="column">
-      <h2>Available</h2>
+      <h2 class="available-title">Available</h2>
       <div id="availableList"></div>
     </div>
   </div>
@@ -111,49 +187,26 @@
   async function addTask() {
     const text = taskInput.value.trim();
     const selectedCategory = category.value;
-
     if (!text) return;
 
-    const { error } = await supabase
+    await supabase
       .from("tasks")
       .insert([{ text: text, category: selectedCategory }]);
-
-    if (error) {
-      alert("Could not add task.");
-      console.error(error);
-      return;
-    }
 
     taskInput.value = "";
     loadTasks();
   }
 
   async function deleteTask(id) {
-    const { error } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      alert("Could not delete task.");
-      console.error(error);
-      return;
-    }
-
+    await supabase.from("tasks").delete().eq("id", id);
     loadTasks();
   }
 
   async function moveTask(id, newCategory) {
-    const { error } = await supabase
+    await supabase
       .from("tasks")
       .update({ category: newCategory })
       .eq("id", id);
-
-    if (error) {
-      alert("Could not move task. Add the update policy in Supabase.");
-      console.error(error);
-      return;
-    }
 
     loadTasks();
   }
@@ -165,7 +218,6 @@
       .order("created_at", { ascending: false });
 
     if (error) {
-      alert("Could not load tasks.");
       console.error(error);
       return;
     }
@@ -196,15 +248,15 @@
       buttons.className = "task-buttons";
 
       const waitingBtn = document.createElement("button");
-      waitingBtn.textContent = "Waiting";
+      waitingBtn.textContent = "W";
       waitingBtn.onclick = () => moveTask(task.id, "waiting");
 
       const lowBtn = document.createElement("button");
-      lowBtn.textContent = "Low";
+      lowBtn.textContent = "L";
       lowBtn.onclick = () => moveTask(task.id, "low");
 
       const availableBtn = document.createElement("button");
-      availableBtn.textContent = "Available";
+      availableBtn.textContent = "A";
       availableBtn.onclick = () => moveTask(task.id, "available");
 
       buttons.appendChild(waitingBtn);
@@ -214,13 +266,9 @@
       taskDiv.appendChild(top);
       taskDiv.appendChild(buttons);
 
-      if (task.category === "waiting") {
-        waitingList.appendChild(taskDiv);
-      } else if (task.category === "low") {
-        lowList.appendChild(taskDiv);
-      } else if (task.category === "available") {
-        availableList.appendChild(taskDiv);
-      }
+      if (task.category === "waiting") waitingList.appendChild(taskDiv);
+      if (task.category === "low") lowList.appendChild(taskDiv);
+      if (task.category === "available") availableList.appendChild(taskDiv);
     });
   }
 
