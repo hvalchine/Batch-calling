@@ -1,160 +1,341 @@
 <!DOCTYPE html>
+
 <html>
+
 <head>
+
   <title>Shared Task Board</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
+
     body { font-family: Arial, sans-serif; background:#f4f4f4; padding:20px; }
+
     h1 { text-align:center; }
-    .app { max-width:900px; margin:auto; }
+
+    .app { max-width:1000px; margin:auto; }
+
     .input-box, .column { background:white; padding:15px; border-radius:10px; }
-    .input-box { margin-bottom:20px; }
-    input, select, button {
-      padding:10px; margin:5px; border-radius:6px; border:1px solid #ccc;
-    }
+
+    .input-box { margin-bottom:20px; display:flex; gap:8px; flex-wrap:wrap; }
+
+    input, select, button { padding:10px; border-radius:6px; border:1px solid #ccc; }
+
     button { cursor:pointer; background:#222; color:white; }
+
     .columns { display:flex; gap:15px; }
-    .column { flex:1; min-height:300px; }
+
+    .column { flex:1; min-height:350px; }
+
+    .task-list { min-height:250px; padding-bottom:30px; }
+
     .task {
-      padding:10px; margin:10px 0; border-radius:8px;
-      color:white; display:flex; justify-content:space-between; align-items:center;
+
+      padding:14px;
+
+      margin:10px 0;
+
+      border-radius:8px;
+
+      color:white;
+
+      display:flex;
+
+      justify-content:space-between;
+
+      align-items:center;
+
+      cursor:grab;
+
+      touch-action:none;
+
     }
+
     .waiting { background:#ef4444; }
+
     .low { background:#f59e0b; }
+
+    .available { background:#22c55e; }
+
     .delete { background:rgba(0,0,0,.25); border:none; color:white; }
+
+    .ghost { opacity:.4; }
+
+    @media (max-width:700px) {
+
+      .columns { flex-direction:column; }
+
+      .input-box { flex-direction:column; }
+
+      input, select, button { width:100%; }
+
+    }
+
   </style>
+
 </head>
+
 <body>
 
 <div class="app">
+
   <h1>Shared Task Board</h1>
 
   <div class="input-box">
+
     <input type="text" id="taskInput" placeholder="Enter a task">
 
     <select id="category">
+
       <option value="waiting">Waiting</option>
+
       <option value="low">Low</option>
+
+      <option value="available">Available</option>
+
     </select>
 
     <button id="addBtn">Add Task</button>
+
   </div>
 
   <div class="columns">
+
     <div class="column">
+
       <h2>Waiting</h2>
-      <div id="waitingList"></div>
+
+      <div id="waitingList" class="task-list" data-category="waiting"></div>
+
     </div>
 
     <div class="column">
+
       <h2>Low</h2>
-      <div id="lowList"></div>
+
+      <div id="lowList" class="task-list" data-category="low"></div>
+
     </div>
+
+    <div class="column">
+
+      <h2>Available</h2>
+
+      <div id="availableList" class="task-list" data-category="available"></div>
+
+    </div>
+
   </div>
+
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
 <script type="module">
+
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
   const SUPABASE_URL = "https://bmxijuzdebfylbpojlft.supabase.co";
+
   const SUPABASE_ANON_KEY = "sb_publishable_Dsuoz_F97uw8TNzTxxKbwA_efOkHdPG";
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const taskInput = document.getElementById("taskInput");
+
   const category = document.getElementById("category");
+
   const addBtn = document.getElementById("addBtn");
+
   const waitingList = document.getElementById("waitingList");
+
   const lowList = document.getElementById("lowList");
+
+  const availableList = document.getElementById("availableList");
 
   addBtn.addEventListener("click", addTask);
 
   taskInput.addEventListener("keydown", function(event) {
+
     if (event.key === "Enter") addTask();
+
   });
 
   async function addTask() {
+
     const text = taskInput.value.trim();
+
     const selectedCategory = category.value;
 
     if (!text) return;
 
-    const { error } = await supabase
+    await supabase
+
       .from("tasks")
+
       .insert([{ text: text, category: selectedCategory }]);
 
-    if (error) {
-      alert("Could not add task. Check your Supabase table/rules.");
-      console.error(error);
-      return;
-    }
-
     taskInput.value = "";
+
     loadTasks();
+
   }
 
   async function deleteTask(id) {
-    const { error } = await supabase
+
+    await supabase
+
       .from("tasks")
+
       .delete()
+
       .eq("id", id);
 
-    if (error) {
-      alert("Could not delete task.");
-      console.error(error);
-      return;
-    }
+    loadTasks();
+
+  }
+
+  async function updateTaskCategory(id, newCategory) {
+
+    await supabase
+
+      .from("tasks")
+
+      .update({ category: newCategory })
+
+      .eq("id", id);
 
     loadTasks();
+
   }
 
   async function loadTasks() {
+
     const { data, error } = await supabase
+
       .from("tasks")
+
       .select("*")
+
       .order("created_at", { ascending: false });
 
     if (error) {
+
       console.error(error);
+
+      alert("Could not load tasks.");
+
       return;
+
     }
 
     waitingList.innerHTML = "";
+
     lowList.innerHTML = "";
 
+    availableList.innerHTML = "";
+
     data.forEach(task => {
+
       const taskDiv = document.createElement("div");
+
       taskDiv.className = `task ${task.category}`;
 
+      taskDiv.dataset.id = task.id;
+
       const span = document.createElement("span");
+
       span.textContent = task.text;
 
       const deleteBtn = document.createElement("button");
+
       deleteBtn.textContent = "X";
+
       deleteBtn.className = "delete";
-      deleteBtn.onclick = () => deleteTask(task.id);
+
+      deleteBtn.onclick = (event) => {
+
+        event.stopPropagation();
+
+        deleteTask(task.id);
+
+      };
 
       taskDiv.appendChild(span);
+
       taskDiv.appendChild(deleteBtn);
 
       if (task.category === "waiting") {
+
         waitingList.appendChild(taskDiv);
+
       } else if (task.category === "low") {
+
         lowList.appendChild(taskDiv);
+
+      } else if (task.category === "available") {
+
+        availableList.appendChild(taskDiv);
+
       }
+
     });
+
+  }
+
+  function setupDragDrop() {
+
+    [waitingList, lowList, availableList].forEach(list => {
+
+      new Sortable(list, {
+
+        group: "shared-tasks",
+
+        animation: 150,
+
+        ghostClass: "ghost",
+
+        onAdd: async function(event) {
+
+          const taskId = event.item.dataset.id;
+
+          const newCategory = event.to.dataset.category;
+
+          event.item.className = `task ${newCategory}`;
+
+          await updateTaskCategory(taskId, newCategory);
+
+        }
+
+      });
+
+    });
+
   }
 
   supabase
-    .channel("tasks-changes")
+
+    .channel("tasks-live-updates")
+
     .on(
+
       "postgres_changes",
+
       { event: "*", schema: "public", table: "tasks" },
+
       () => loadTasks()
+
     )
+
     .subscribe();
 
+  setupDragDrop();
+
   loadTasks();
+
 </script>
 
 </body>
+
 </html>
