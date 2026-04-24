@@ -285,26 +285,29 @@
   }
 
   function setupDragDrop() {
+  [waitingList, lowList, availableList].forEach(list => {
+    new Sortable(list, {
+      group: "shared-tasks",
+      animation: 150,
+      ghostClass: "ghost",
 
-    [waitingList, lowList, availableList].forEach(list => {
+      delay: 200,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
+      fallbackOnBody: true,
+      forceFallback: true,
 
-      new Sortable(list, {
+      onAdd: async function(event) {
+        const taskId = event.item.dataset.id;
+        const newCategory = event.to.dataset.category;
 
-        group: "shared-tasks",
+        event.item.className = `task ${newCategory}`;
 
-        animation: 150,
-
-        ghostClass: "ghost",
-
-        onAdd: async function(event) {
-
-          const taskId = event.item.dataset.id;
-
-          const newCategory = event.to.dataset.category;
-
-          event.item.className = `task ${newCategory}`;
-
-          await updateTaskCategory(taskId, newCategory);
+        await updateTaskCategory(taskId, newCategory);
+      }
+    });
+  });
+}
 
         }
 
