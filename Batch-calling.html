@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shared Task Board</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f4f4; padding:20px; }
+    h1 { text-align:center; }
+    .app { max-width:900px; margin:auto; }
+    .input-box, .column { background:white; padding:15px; border-radius:10px; }
+    .input-box { margin-bottom:20px; }
+    input, select, button {
+      padding:10px; margin:5px; border-radius:6px; border:1px solid #ccc;
+    }
+    button { cursor:pointer; background:#222; color:white; }
+    .columns { display:flex; gap:15px; }
+    .column { flex:1; min-height:300px; }
+    .task {
+      padding:10px; margin:10px 0; border-radius:8px;
+      color:white; display:flex; justify-content:space-between; align-items:center;
+    }
+    .waiting { background:#ef4444; }
+    .low { background:#f59e0b; }
+    .delete { background:rgba(0,0,0,.25); border:none; color:white; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <h1>Shared Task Board</h1>
+
+  <div class="input-box">
+    <input type="text" id="taskInput" placeholder="Enter a task">
+
+    <select id="category">
+      <option value="waiting">Waiting</option>
+      <option value="low">Low</option>
+    </select>
+
+    <button id="addBtn">Add Task</button>
+  </div>
+
+  <div class="columns">
+    <div class="column">
+      <h2>Waiting</h2>
+      <div id="waitingList"></div>
+    </div>
+
+    <div class="column">
+      <h2>Low</h2>
+      <div id="lowList"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+  const SUPABASE_URL = "https://bmxijuzdebfylbpojlft.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_Dsuoz_F97uw8TNzTxxKbwA_efOkHdPG";
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const taskInput = document.getElementById("taskInput");
+  const category = document.getElementById("category");
+  const addBtn = document.getElementById("addBtn");
+  const waitingList = document.getElementById("waitingList");
+  const lowList = document.getElementById("lowList");
+
+  addBtn.addEventListener("click", addTask);
+
+  taskInput.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") addTask();
+  });
+
+  async function addTask() {
+    const text = taskInput.value.trim();
+    const selectedCategory = category.value;
+
+    if (!text) return;
+
+    const { error } = await supabase
+      .from("tasks")
+      .insert([{ text: text, category: selectedCategory }]);
+
+    if (error) {
+      alert("Could not add task. Check your Supabase table/rules.");
+      console.error(error);
+      return;
+    }
+
+    taskInput.value = "";
+    loadTasks();
+  }
+
+  async function deleteTask(id) {
+    const { error } = await supabase
+      .from("tasks")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      alert("Could not delete task.");
+      console.error(error);
+      return;
+    }
+
+    loadTasks();
+  }
+
+  async function loadTasks() {
+    const { data, error } = await supabase
+      .from("tasks")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    waitingList.innerHTML = "";
+    lowList.innerHTML = "";
+
+    data.forEach(task => {
+      const taskDiv = document.createElement("div");
+      taskDiv.className = `task ${task.category}`;
+
+      const span = document.createElement("span");
+      span.textContent = task.text;
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "X";
+      deleteBtn.className = "delete";
+      deleteBtn.onclick = () => deleteTask(task.id);
+
+      taskDiv.appendChild(span);
+      taskDiv.appendChild(deleteBtn);
+
+      if (task.category === "waiting") {
+        waitingList.appendChild(taskDiv);
+      } else if (task.category === "low") {
+        lowList.appendChild(taskDiv);
+      }
+    });
+  }
+
+  supabase
+    .channel("tasks-changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "tasks" },
+      () => loadTasks()
+    )
+    .subscribe();
+
+  loadTasks();
+</script>
+
+</body>
+</html>
