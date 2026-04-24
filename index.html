@@ -3,142 +3,33 @@
 <head>
   <title>Panda Ops Board</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background:#f3f4f6;
-      margin:0;
-      padding:8px;
-    }
-
+    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:8px; }
     .app { max-width:1100px; margin:auto; }
-
-    h1 {
-      text-align:center;
-      font-size:22px;
-      margin:8px 0 12px;
-    }
-
-    .input-box {
-      background:white;
-      padding:8px;
-      border-radius:12px;
-      display:flex;
-      gap:6px;
-      margin-bottom:10px;
-      box-shadow:0 1px 4px rgba(0,0,0,.08);
-    }
-
-    input, select, button {
-      padding:8px;
-      border-radius:8px;
-      border:1px solid #ccc;
-      font-size:13px;
-    }
-
+    h1 { text-align:center; font-size:22px; margin:8px 0 12px; }
+    .input-box { background:white; padding:8px; border-radius:12px; display:flex; gap:6px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    input, select, button { padding:8px; border-radius:8px; border:1px solid #ccc; font-size:13px; }
     input { flex:1; }
-
-    button {
-      background:#111827;
-      color:white;
-      border:none;
-      cursor:pointer;
-    }
-
-    .columns {
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:6px;
-    }
-
-    .column {
-      background:white;
-      border-radius:14px;
-      padding:6px;
-      min-height:420px;
-      max-height:75vh;
-      overflow-y:auto;
-      box-shadow:0 1px 5px rgba(0,0,0,.08);
-    }
-
-    .column h2 {
-      font-size:14px;
-      margin:0 0 6px;
-      padding:7px;
-      border-radius:10px;
-      color:white;
-      text-align:center;
-    }
-
-    .sub-title {
-      font-size:12px;
-      margin:8px 4px 4px;
-      color:#374151;
-      font-weight:bold;
-    }
-
+    button { background:#111827; color:white; border:none; cursor:pointer; }
+    .columns { display:grid; grid-template-columns: repeat(3, 1fr); gap:6px; }
+    .column { background:white; border-radius:14px; padding:6px; min-height:420px; max-height:75vh; overflow-y:auto; box-shadow:0 1px 5px rgba(0,0,0,.08); }
+    .column h2 { font-size:14px; margin:0 0 6px; padding:7px; border-radius:10px; color:white; text-align:center; }
+    .sub-title { font-size:12px; margin:8px 4px 4px; color:#374151; font-weight:bold; }
     .waiting-title { background:#dc2626; }
     .low-title { background:#f59e0b; }
     .available-title { background:#16a34a; }
-
-    .task-list {
-      min-height:140px;
-      padding-bottom:18px;
-    }
-
-    .task {
-      padding:8px;
-      margin:6px 0;
-      border-radius:10px;
-      color:white;
-      font-size:13px;
-      font-weight:bold;
-      cursor:grab;
-      touch-action:none;
-    }
-
-    .task-top {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:6px;
-    }
-
-    .timer {
-      font-size:11px;
-      margin-top:4px;
-      opacity:.95;
-      font-weight:normal;
-    }
-
+    .task-list { min-height:140px; padding-bottom:18px; }
+    .task { padding:8px; margin:6px 0; border-radius:10px; color:white; font-size:13px; font-weight:bold; cursor:grab; touch-action:none; }
+    .task-top { display:flex; justify-content:space-between; align-items:center; gap:6px; }
+    .timer { font-size:11px; margin-top:4px; opacity:.95; font-weight:normal; }
     .waiting { background:#ef4444; }
     .inprogress { background:#3b82f6; }
     .low { background:#f59e0b; }
     .available { background:#22c55e; }
-
-    .delete {
-      background:rgba(0,0,0,.25);
-      color:white;
-      border:none;
-      border-radius:6px;
-      padding:4px 7px;
-      font-size:11px;
-      width:auto;
-    }
-
+    .delete { background:rgba(0,0,0,.25); color:white; border:none; border-radius:6px; padding:4px 7px; font-size:11px; width:auto; }
     .ghost { opacity:0.4; }
-
-    .alert {
-      animation: flash 1s infinite;
-      outline:3px solid yellow;
-    }
-
-    @keyframes flash {
-      0% { filter: brightness(1); }
-      50% { filter: brightness(1.45); }
-      100% { filter: brightness(1); }
-    }
+    .alert { animation: flash 1s infinite; outline:3px solid yellow; }
+    @keyframes flash { 0% { filter: brightness(1); } 50% { filter: brightness(1.45); } 100% { filter: brightness(1); } }
 
     @media (max-width:700px) {
       body { padding:5px; }
@@ -154,30 +45,25 @@
 </head>
 
 <body>
-
 <div class="app">
   <h1>Panda Ops Board</h1>
 
   <div class="input-box">
     <input type="text" id="taskInput" placeholder="Item name">
-
     <select id="category">
       <option value="waiting">Waiting</option>
       <option value="inprogress">In Progress</option>
       <option value="low">Low</option>
       <option value="available">Available</option>
     </select>
-
     <button id="addBtn">Add</button>
   </div>
 
   <div class="columns">
     <div class="column">
       <h2 class="waiting-title">Waiting</h2>
-
       <div class="sub-title">Waiting</div>
       <div id="waitingList" class="task-list" data-category="waiting"></div>
-
       <div class="sub-title">In Progress</div>
       <div id="inProgressList" class="task-list" data-category="inprogress"></div>
     </div>
@@ -193,10 +79,6 @@
     </div>
   </div>
 </div>
-
-<audio id="alertSound" preload="auto">
-  <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.wav" type="audio/wav">
-</audio>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
@@ -216,7 +98,6 @@
   const inProgressList = document.getElementById("inProgressList");
   const lowList = document.getElementById("lowList");
   const availableList = document.getElementById("availableList");
-  const alertSound = document.getElementById("alertSound");
 
   const alertLimits = {
     waiting: 5,
@@ -226,43 +107,45 @@
   };
 
   addBtn.addEventListener("click", addTask);
-
   taskInput.addEventListener("keydown", function(event) {
     if (event.key === "Enter") addTask();
   });
 
-  document.body.addEventListener("click", () => {
-    alertSound.play().then(() => {
-      alertSound.pause();
-      alertSound.currentTime = 0;
-    }).catch(() => {});
-  }, { once: true });
-
   function playAlertSound() {
-    try {
-      alertSound.currentTime = 0;
-      alertSound.play();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+    function beep(freq, delay) {
       setTimeout(() => {
-        alertSound.currentTime = 0;
-        alertSound.play();
-      }, 450);
-    } catch (e) {}
+        const oscillator = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        oscillator.type = "square";
+        oscillator.frequency.value = freq;
+
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+
+        oscillator.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.35);
+      }, delay);
+    }
+
+    beep(900, 0);
+    beep(1200, 350);
+    beep(900, 700);
   }
 
   async function addTask() {
     const text = taskInput.value.trim();
     const selectedCategory = category.value;
-
     if (!text) return;
 
     const { error } = await supabase
       .from("tasks")
-      .insert([{
-        text: text,
-        category: selectedCategory,
-        status_started_at: new Date().toISOString()
-      }]);
+      .insert([{ text, category: selectedCategory, status_started_at: new Date().toISOString() }]);
 
     if (error) {
       alert("Could not add item.");
@@ -279,27 +162,19 @@
   }
 
   async function deleteTask(id) {
-    const { error } = await supabase
-      .from("tasks")
-      .delete()
-      .eq("id", id);
-
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
     if (error) {
       alert("Could not delete item.");
       console.error(error);
       return;
     }
-
     loadTasks();
   }
 
   async function updateTaskCategory(id, newCategory) {
     const { error } = await supabase
       .from("tasks")
-      .update({
-        category: newCategory,
-        status_started_at: new Date().toISOString()
-      })
+      .update({ category: newCategory, status_started_at: new Date().toISOString() })
       .eq("id", id);
 
     if (error) {
@@ -312,9 +187,7 @@
 
   function minutesSince(dateString) {
     if (!dateString) return 0;
-    const started = new Date(dateString);
-    const now = new Date();
-    return Math.floor((now - started) / 60000);
+    return Math.floor((new Date() - new Date(dateString)) / 60000);
   }
 
   function timerText(minutes) {
@@ -324,8 +197,7 @@
   }
 
   function shouldFlash(task) {
-    const mins = minutesSince(task.status_started_at);
-    return mins >= alertLimits[task.category];
+    return minutesSince(task.status_started_at) >= alertLimits[task.category];
   }
 
   async function loadTasks() {
@@ -352,9 +224,7 @@
       taskDiv.className = `task ${task.category}`;
       taskDiv.dataset.id = task.id;
 
-      if (shouldFlash(task)) {
-        taskDiv.classList.add("alert");
-      }
+      if (shouldFlash(task)) taskDiv.classList.add("alert");
 
       const top = document.createElement("div");
       top.className = "task-top";
@@ -365,7 +235,6 @@
       const deleteBtn = document.createElement("button");
       deleteBtn.textContent = "X";
       deleteBtn.className = "delete";
-
       deleteBtn.onclick = (event) => {
         event.stopPropagation();
         deleteTask(task.id);
@@ -381,15 +250,10 @@
       taskDiv.appendChild(top);
       taskDiv.appendChild(timer);
 
-      if (task.category === "waiting") {
-        waitingList.appendChild(taskDiv);
-      } else if (task.category === "inprogress") {
-        inProgressList.appendChild(taskDiv);
-      } else if (task.category === "low") {
-        lowList.appendChild(taskDiv);
-      } else if (task.category === "available") {
-        availableList.appendChild(taskDiv);
-      }
+      if (task.category === "waiting") waitingList.appendChild(taskDiv);
+      else if (task.category === "inprogress") inProgressList.appendChild(taskDiv);
+      else if (task.category === "low") lowList.appendChild(taskDiv);
+      else if (task.category === "available") availableList.appendChild(taskDiv);
     });
   }
 
@@ -433,10 +297,7 @@
 
   setupDragDrop();
   loadTasks();
-
-  setInterval(() => {
-    loadTasks();
-  }, 30000);
+  setInterval(loadTasks, 30000);
 </script>
 
 </body>
