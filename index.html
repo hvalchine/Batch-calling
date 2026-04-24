@@ -194,6 +194,10 @@
   </div>
 </div>
 
+<audio id="alertSound" preload="auto">
+  <source src="https://www.soundjay.com/misc/sounds/bell-ringing-05.wav" type="audio/wav">
+</audio>
+
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 
 <script type="module">
@@ -212,8 +216,7 @@
   const inProgressList = document.getElementById("inProgressList");
   const lowList = document.getElementById("lowList");
   const availableList = document.getElementById("availableList");
-
-  let latestTasks = [];
+  const alertSound = document.getElementById("alertSound");
 
   const alertLimits = {
     waiting: 5,
@@ -227,6 +230,25 @@
   taskInput.addEventListener("keydown", function(event) {
     if (event.key === "Enter") addTask();
   });
+
+  document.body.addEventListener("click", () => {
+    alertSound.play().then(() => {
+      alertSound.pause();
+      alertSound.currentTime = 0;
+    }).catch(() => {});
+  }, { once: true });
+
+  function playAlertSound() {
+    try {
+      alertSound.currentTime = 0;
+      alertSound.play();
+
+      setTimeout(() => {
+        alertSound.currentTime = 0;
+        alertSound.play();
+      }, 450);
+    } catch (e) {}
+  }
 
   async function addTask() {
     const text = taskInput.value.trim();
@@ -246,6 +268,10 @@
       alert("Could not add item.");
       console.error(error);
       return;
+    }
+
+    if (selectedCategory === "waiting" || selectedCategory === "low") {
+      playAlertSound();
     }
 
     taskInput.value = "";
@@ -313,8 +339,6 @@
       console.error(error);
       return;
     }
-
-    latestTasks = data;
 
     waitingList.innerHTML = "";
     inProgressList.innerHTML = "";
@@ -386,6 +410,10 @@
           const newCategory = event.to.dataset.category;
 
           event.item.className = `task ${newCategory}`;
+
+          if (newCategory === "waiting" || newCategory === "low") {
+            playAlertSound();
+          }
 
           await updateTaskCategory(taskId, newCategory);
           loadTasks();
