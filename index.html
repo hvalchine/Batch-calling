@@ -1,46 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PX 1602 Kitchen Board</title>
+
+  <title>PX 1602</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
     * { box-sizing: border-box; }
 
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      min-height: 100%;
-      overflow-y: auto;
-      touch-action: pan-y;
-      font-family: Arial, sans-serif;
       background: #111;
       color: white;
-    }
-
-    .app {
-      min-height: 100vh;
-      padding: 8px;
+      font-family: Arial, sans-serif;
+      overflow-y: auto;
       padding-bottom: 75px;
     }
 
     .header {
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-      padding: 8px;
       background: #c8102e;
+      text-align: center;
+      font-size: 26px;
+      font-weight: bold;
+      padding: 10px;
+      margin: 8px;
       border-radius: 8px;
-      margin-bottom: 8px;
     }
 
     .board {
       display: grid;
       grid-template-columns: 0.9fr 1fr 1.4fr;
       gap: 8px;
+      padding: 8px;
       align-items: start;
     }
 
@@ -51,34 +45,18 @@
       min-height: 75vh;
     }
 
-    .column-title, .section-title {
+    .title {
       text-align: center;
       font-weight: bold;
-      padding: 8px 4px;
-      margin-bottom: 6px;
+      padding: 8px;
       border-radius: 6px;
+      margin-bottom: 6px;
     }
 
-    .available .column-title {
-      background: #1f7a1f;
-      font-size: 13px;
-    }
-
-    .low .column-title {
-      background: #d96b00;
-      font-size: 15px;
-    }
-
-    .waiting .column-title {
-      background: #b00000;
-      font-size: 20px;
-    }
-
-    .section-title {
-      margin-top: 12px;
-      background: #333;
-      font-size: 15px;
-    }
+    .available-title { background: #1f7a1f; font-size: 13px; }
+    .low-title { background: #d96b00; font-size: 15px; }
+    .waiting-title { background: #b00000; font-size: 21px; }
+    .progress-title { background: #444; font-size: 15px; margin-top: 12px; }
 
     .card {
       position: relative;
@@ -86,66 +64,61 @@
       margin-bottom: 6px;
       cursor: pointer;
       user-select: none;
-      transition: transform 0.1s ease;
-      padding-right: 26px;
+      padding-right: 28px;
+      word-break: break-word;
     }
 
-    .card:active { transform: scale(0.97); }
+    .available-card {
+      background: #1f7a1f;
+      padding: 6px 28px 6px 6px;
+      font-size: 12px;
+    }
+
+    .low-card {
+      background: #d96b00;
+      border-left: 5px solid #ffb347;
+      padding: 9px 28px 9px 9px;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .waiting-card {
+      background: #b00000;
+      border: 2px solid #ff7777;
+      padding: 14px 28px 14px 10px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .progress-card {
+      background: #444;
+      border: 2px solid #aaa;
+      padding: 12px 28px 12px 10px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
 
     .delete-btn {
       position: absolute;
       top: 3px;
       right: 5px;
       background: transparent;
-      border: none;
       color: white;
-      font-size: 17px;
+      border: none;
+      font-size: 18px;
       font-weight: bold;
-      opacity: 0.7;
-      cursor: pointer;
     }
 
-    .available .card {
-      background: #1f7a1f;
-      padding: 6px 26px 6px 6px;
-      font-size: 12px;
-      line-height: 1.1;
-    }
-
-    .low .card {
-      background: #d96b00;
-      border-left: 5px solid #ffb347;
-      padding: 9px 26px 9px 9px;
-      font-size: 15px;
-      font-weight: bold;
-      line-height: 1.15;
-      animation: none !important;
-    }
-
-    .waiting .card {
-      background: #b00000;
-      border: 2px solid #ff7777;
-      padding: 14px 26px 14px 10px;
-      font-size: 22px;
-      font-weight: bold;
-      text-align: center;
-      line-height: 1.15;
-    }
-
-    .inprogress-card {
-      background: #444 !important;
-      border: 2px solid #aaa !important;
-      font-size: 18px !important;
-    }
-
-    @keyframes waitingPulse {
+    @keyframes pulse {
       0% { background: #b00000; }
       50% { background: #ff2b2b; }
       100% { background: #b00000; }
     }
 
-    .waiting .flash {
-      animation: waitingPulse 0.6s ease-in-out 3;
+    .flash {
+      animation: pulse 0.6s ease-in-out 3;
     }
 
     #addBar {
@@ -155,65 +128,63 @@
       right: 10px;
       display: flex;
       gap: 6px;
-      z-index: 1000;
       background: #111;
       padding: 6px;
       border-radius: 8px;
+      z-index: 999;
     }
 
     #newItem {
       flex: 1;
-      padding: 11px;
+      padding: 12px;
+      font-size: 16px;
       border-radius: 6px;
       border: none;
-      font-size: 16px;
     }
 
     #addBtn {
-      width: 58px;
+      width: 60px;
       background: #1f7a1f;
       color: white;
       border: none;
       border-radius: 6px;
-      font-size: 24px;
+      font-size: 26px;
       font-weight: bold;
     }
 
     .hint {
       text-align: center;
-      font-size: 11px;
       opacity: 0.6;
-      margin-top: 6px;
+      font-size: 11px;
+      margin-top: 4px;
     }
   </style>
 </head>
 
 <body>
-  <div class="app">
-    <div class="header">PX 1602</div>
+  <div class="header">PX 1602</div>
 
-    <div class="board">
-      <div class="column available">
-        <div class="column-title">AVAILABLE</div>
-        <div id="available"></div>
-      </div>
-
-      <div class="column low">
-        <div class="column-title">LOW</div>
-        <div id="low"></div>
-      </div>
-
-      <div class="column waiting">
-        <div class="column-title">WAITING</div>
-        <div id="waiting"></div>
-
-        <div class="section-title">IN PROGRESS</div>
-        <div id="inprogress"></div>
-      </div>
+  <div class="board">
+    <div class="column">
+      <div class="title available-title">AVAILABLE</div>
+      <div id="available"></div>
     </div>
 
-    <div class="hint">Tap flow: Available → Low → Waiting → In Progress → Available</div>
+    <div class="column">
+      <div class="title low-title">LOW</div>
+      <div id="low"></div>
+    </div>
+
+    <div class="column">
+      <div class="title waiting-title">WAITING</div>
+      <div id="waiting"></div>
+
+      <div class="title progress-title">IN PROGRESS</div>
+      <div id="inprogress"></div>
+    </div>
   </div>
+
+  <div class="hint">Tap: Available → Low → Waiting → In Progress → Available</div>
 
   <div id="addBar">
     <input id="newItem" placeholder="Add item..." />
@@ -221,45 +192,46 @@
   </div>
 
   <script>
-    const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
-    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+    const SUPABASE_URL = "https://bmxijuzdebfylbpojlft.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Dsuoz_F97uw8TNzTxxKbwA_efOkHdPG";
 
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const available = document.getElementById("available");
     const low = document.getElementById("low");
     const waiting = document.getElementById("waiting");
     const inprogress = document.getElementById("inprogress");
-    const addBtn = document.getElementById("addBtn");
     const newItem = document.getElementById("newItem");
+    const addBtn = document.getElementById("addBtn");
 
-    let lastWaitingIds = new Set();
+    let previousWaiting = new Set();
 
-    function playWaitingSound() {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+    function playSound() {
+      try {
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audio.createOscillator();
+        const gain = audio.createGain();
 
-      oscillator.type = "square";
-      oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+        osc.type = "square";
+        osc.frequency.value = 880;
+        gain.gain.value = 0.15;
 
-      oscillator.connect(gain);
-      gain.connect(audioCtx.destination);
+        osc.connect(gain);
+        gain.connect(audio.destination);
 
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.25);
+        osc.start();
+        osc.stop(audio.currentTime + 0.25);
+      } catch {}
     }
 
     async function loadItems() {
-      const { data, error } = await supabaseClient
+      const { data, error } = await db
         .from("kitchen_items")
         .select("*")
         .order("created_at", { ascending: true });
 
       if (error) {
-        console.error(error);
+        alert("Load error: " + error.message);
         return;
       }
 
@@ -277,23 +249,17 @@
         if (item.status === "waiting") {
           waiting.appendChild(card);
 
-          if (!lastWaitingIds.has(item.id)) {
+          if (!previousWaiting.has(item.id)) {
             card.classList.add("flash");
-            playWaitingSound();
-
-            setTimeout(() => {
-              card.classList.remove("flash");
-            }, 1800);
+            playSound();
+            setTimeout(() => card.classList.remove("flash"), 1800);
           }
         }
 
-        if (item.status === "inprogress") {
-          card.classList.add("inprogress-card");
-          inprogress.appendChild(card);
-        }
+        if (item.status === "inprogress") inprogress.appendChild(card);
       });
 
-      lastWaitingIds = new Set(
+      previousWaiting = new Set(
         data.filter(item => item.status === "waiting").map(item => item.id)
       );
     }
@@ -301,77 +267,76 @@
     function createCard(item) {
       const card = document.createElement("div");
       card.className = "card";
-      card.dataset.id = item.id;
-      card.dataset.status = item.status;
+
+      if (item.status === "available") card.classList.add("available-card");
+      if (item.status === "low") card.classList.add("low-card");
+      if (item.status === "waiting") card.classList.add("waiting-card");
+      if (item.status === "inprogress") card.classList.add("progress-card");
 
       card.innerHTML = `
         <div>${item.name}</div>
         <button class="delete-btn">×</button>
       `;
 
-      card.addEventListener("click", () => cycleStatus(item));
+      card.addEventListener("click", () => moveNext(item));
 
       card.querySelector(".delete-btn").addEventListener("click", async (e) => {
         e.stopPropagation();
 
-        await supabaseClient
+        const { error } = await db
           .from("kitchen_items")
           .delete()
           .eq("id", item.id);
 
-        loadItems();
+        if (error) alert("Delete error: " + error.message);
       });
 
       return card;
     }
 
-    async function cycleStatus(item) {
-      let newStatus;
+    async function moveNext(item) {
+      let nextStatus = "available";
 
-      if (item.status === "available") {
-        newStatus = "low";
-      } else if (item.status === "low") {
-        newStatus = "waiting";
-      } else if (item.status === "waiting") {
-        newStatus = "inprogress";
-      } else {
-        newStatus = "available";
-      }
+      if (item.status === "available") nextStatus = "low";
+      else if (item.status === "low") nextStatus = "waiting";
+      else if (item.status === "waiting") nextStatus = "inprogress";
+      else if (item.status === "inprogress") nextStatus = "available";
 
-      await supabaseClient
+      const { error } = await db
         .from("kitchen_items")
-        .update({ status: newStatus })
+        .update({ status: nextStatus })
         .eq("id", item.id);
 
-      loadItems();
+      if (error) alert("Move error: " + error.message);
     }
 
     async function addItem() {
       const name = newItem.value.trim();
       if (!name) return;
 
-      await supabaseClient
+      const { error } = await db
         .from("kitchen_items")
-        .insert([{ name, status: "available" }]);
+        .insert([{ name: name, status: "available" }]);
+
+      if (error) {
+        alert("Add error: " + error.message);
+        return;
+      }
 
       newItem.value = "";
-      newItem.focus();
-
-      loadItems();
     }
 
     addBtn.addEventListener("click", addItem);
 
-    newItem.addEventListener("keypress", (e) => {
+    newItem.addEventListener("keydown", (e) => {
       if (e.key === "Enter") addItem();
     });
 
-    supabaseClient
-      .channel("kitchen-board-realtime")
+    db.channel("shared-kitchen-board")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "kitchen_items" },
-        () => loadItems()
+        loadItems
       )
       .subscribe();
 
