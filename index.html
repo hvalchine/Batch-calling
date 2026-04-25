@@ -256,7 +256,9 @@
           }
         }
 
-        if (item.status === "inprogress") inprogress.appendChild(card);
+        if (item.status === "inprogress") {
+          inprogress.appendChild(card);
+        }
       });
 
       previousWaiting = new Set(
@@ -288,7 +290,12 @@
           .delete()
           .eq("id", item.id);
 
-        if (error) alert("Delete error: " + error.message);
+        if (error) {
+          alert("Delete error: " + error.message);
+          return;
+        }
+
+        loadItems();
       });
 
       return card;
@@ -297,17 +304,27 @@
     async function moveNext(item) {
       let nextStatus = "available";
 
-      if (item.status === "available") nextStatus = "low";
-      else if (item.status === "low") nextStatus = "waiting";
-      else if (item.status === "waiting") nextStatus = "inprogress";
-      else if (item.status === "inprogress") nextStatus = "available";
+      if (item.status === "available") {
+        nextStatus = "low";
+      } else if (item.status === "low") {
+        nextStatus = "waiting";
+      } else if (item.status === "waiting") {
+        nextStatus = "inprogress";
+      } else if (item.status === "inprogress") {
+        nextStatus = "available";
+      }
 
       const { error } = await db
         .from("kitchen_items")
         .update({ status: nextStatus })
         .eq("id", item.id);
 
-      if (error) alert("Move error: " + error.message);
+      if (error) {
+        alert("Move error: " + error.message);
+        return;
+      }
+
+      loadItems();
     }
 
     async function addItem() {
@@ -324,6 +341,7 @@
       }
 
       newItem.value = "";
+      loadItems();
     }
 
     addBtn.addEventListener("click", addItem);
