@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PX 1602 Kitchen Board</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     * { box-sizing: border-box; }
 
@@ -55,9 +57,6 @@
       padding: 8px 4px;
       margin-bottom: 6px;
       border-radius: 6px;
-      position: sticky;
-      top: 0;
-      z-index: 5;
     }
 
     .available .column-title {
@@ -76,7 +75,6 @@
     }
 
     .section-title {
-      position: static;
       margin-top: 12px;
       background: #333;
       font-size: 15px;
@@ -103,7 +101,7 @@
       color: white;
       font-size: 17px;
       font-weight: bold;
-      opacity: 0.65;
+      opacity: 0.7;
       cursor: pointer;
     }
 
@@ -138,22 +136,6 @@
       background: #444 !important;
       border: 2px solid #aaa !important;
       font-size: 18px !important;
-    }
-
-    .timer {
-      display: block;
-      margin-top: 4px;
-      font-size: 12px;
-      opacity: 0.85;
-    }
-
-    .waiting .timer {
-      font-size: 15px;
-      color: #ffe0e0;
-    }
-
-    .low .timer {
-      color: #fff1d6;
     }
 
     @keyframes waitingPulse {
@@ -211,15 +193,17 @@
     <div class="header">PX 1602</div>
 
     <div class="board">
-      <div class="column available" id="available">
+      <div class="column available">
         <div class="column-title">AVAILABLE</div>
+        <div id="available"></div>
       </div>
 
-      <div class="column low" id="low">
+      <div class="column low">
         <div class="column-title">LOW</div>
+        <div id="low"></div>
       </div>
 
-      <div class="column waiting" id="waitingColumn">
+      <div class="column waiting">
         <div class="column-title">WAITING</div>
         <div id="waiting"></div>
 
@@ -228,9 +212,7 @@
       </div>
     </div>
 
-    <div class="hint">
-      Tap flow: Available → Low → Waiting → In Progress → Available
-    </div>
+    <div class="hint">Tap flow: Available → Low → Waiting → In Progress → Available</div>
   </div>
 
   <div id="addBar">
@@ -239,26 +221,10 @@
   </div>
 
   <script>
-    const items = [
-      "Orange Chicken",
-      "Teriyaki Chicken",
-      "Honey Walnut Shrimp",
-      "Broccoli Beef",
-      "Beijing Beef",
-      "Kung Pao Chicken",
-      "Mushroom Chicken",
-      "String Bean Chicken",
-      "Black Pepper Chicken",
-      "SweetFire Chicken",
-      "Super Greens",
-      "Chow Mein",
-      "Fried Rice",
-      "White Rice",
-      "Brown Rice",
-      "Egg Rolls",
-      "Rangoons",
-      "Spring Rolls"
-    ];
+    const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const available = document.getElementById("available");
     const low = document.getElementById("low");
@@ -267,7 +233,7 @@
     const addBtn = document.getElementById("addBtn");
     const newItem = document.getElementById("newItem");
 
-    const timers = {};
+    let lastWaitingIds = new Set();
 
     function playWaitingSound() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -286,100 +252,112 @@
       oscillator.stop(audioCtx.currentTime + 0.25);
     }
 
-    function createCard(name) {
+    async function loadItems() {
+      const { data, error } = await supabaseClient
+        .from("kitchen_items")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      available.innerHTML = "";
+      low.innerHTML = "";
+      waiting.innerHTML = "";
+      inprogress.innerHTML = "";
+
+      data.forEach(item => {
+        const card = createCard(item);
+
+        if (item.status === "available") available.appendChild(card);
+        if (item.status === "low") low.appendChild(card);
+
+        if (item.status === "waiting") {
+          waiting.appendChild(card);
+
+          if (!lastWaitingIds.has(item.id)) {
+            card.classList.add("flash");
+            playWaitingSound();
+
+            setTimeout(() => {
+              card.classList.remove("flash");
+            }, 1800);
+          }
+        }
+
+        if (item.status === "inprogress") {
+          card.classList.add("inprogress-card");
+          inprogress.appendChild(card);
+        }
+      });
+
+      lastWaitingIds = new Set(
+        data.filter(item => item.status === "waiting").map(item => item.id)
+      );
+    }
+
+    function createCard(item) {
       const card = document.createElement("div");
       card.className = "card";
-      card.dataset.name = name;
-      card.dataset.status = "available";
+      card.dataset.id = item.id;
+      card.dataset.status = item.status;
 
       card.innerHTML = `
-        <div>${name}</div>
-        <span class="timer"></span>
+        <div>${item.name}</div>
         <button class="delete-btn">×</button>
       `;
 
-      card.addEventListener("click", () => cycleStatus(card));
+      card.addEventListener("click", () => cycleStatus(item));
 
-      card.querySelector(".delete-btn").addEventListener("click", (e) => {
+      card.querySelector(".delete-btn").addEventListener("click", async (e) => {
         e.stopPropagation();
-        clearInterval(timers[name]);
-        card.remove();
+
+        await supabaseClient
+          .from("kitchen_items")
+          .delete()
+          .eq("id", item.id);
+
+        loadItems();
       });
 
       return card;
     }
 
-    function cycleStatus(card) {
-      const status = card.dataset.status;
+    async function cycleStatus(item) {
+      let newStatus;
 
-      if (status === "available") {
-        moveCard(card, "low");
-      } else if (status === "low") {
-        moveCard(card, "waiting");
-      } else if (status === "waiting") {
-        moveCard(card, "inprogress");
+      if (item.status === "available") {
+        newStatus = "low";
+      } else if (item.status === "low") {
+        newStatus = "waiting";
+      } else if (item.status === "waiting") {
+        newStatus = "inprogress";
       } else {
-        moveCard(card, "available");
+        newStatus = "available";
       }
+
+      await supabaseClient
+        .from("kitchen_items")
+        .update({ status: newStatus })
+        .eq("id", item.id);
+
+      loadItems();
     }
 
-    function moveCard(card, newStatus) {
-      const name = card.dataset.name;
-      card.dataset.status = newStatus;
-
-      clearInterval(timers[name]);
-      card.querySelector(".timer").textContent = "";
-      card.classList.remove("flash", "inprogress-card");
-
-      if (newStatus === "available") {
-        available.appendChild(card);
-      }
-
-      if (newStatus === "low") {
-        low.appendChild(card);
-        startTimer(card);
-      }
-
-      if (newStatus === "waiting") {
-        waiting.appendChild(card);
-
-        card.classList.add("flash");
-        playWaitingSound();
-
-        setTimeout(() => {
-          card.classList.remove("flash");
-        }, 1800);
-
-        startTimer(card);
-      }
-
-      if (newStatus === "inprogress") {
-        card.classList.add("inprogress-card");
-        inprogress.appendChild(card);
-        startTimer(card);
-      }
-    }
-
-    function startTimer(card) {
-      const name = card.dataset.name;
-      const timerText = card.querySelector(".timer");
-      let seconds = 0;
-
-      timers[name] = setInterval(() => {
-        seconds++;
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        timerText.textContent = mins + ":" + secs.toString().padStart(2, "0");
-      }, 1000);
-    }
-
-    function addItem() {
+    async function addItem() {
       const name = newItem.value.trim();
       if (!name) return;
 
-      available.appendChild(createCard(name));
+      await supabaseClient
+        .from("kitchen_items")
+        .insert([{ name, status: "available" }]);
+
       newItem.value = "";
       newItem.focus();
+
+      loadItems();
     }
 
     addBtn.addEventListener("click", addItem);
@@ -388,9 +366,16 @@
       if (e.key === "Enter") addItem();
     });
 
-    items.forEach(item => {
-      available.appendChild(createCard(item));
-    });
+    supabaseClient
+      .channel("kitchen-board-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "kitchen_items" },
+        () => loadItems()
+      )
+      .subscribe();
+
+    loadItems();
   </script>
 </body>
 </html>
